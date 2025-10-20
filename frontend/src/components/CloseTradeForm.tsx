@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Trade, TradeClose } from '../types';
-import { X } from 'lucide-react';
+import { useState } from "react";
+import { Trade, TradeClose } from "../types";
+import { X } from "lucide-react";
 
 interface CloseTradeFormProps {
   trade: Trade;
@@ -8,10 +8,14 @@ interface CloseTradeFormProps {
   onCancel: () => void;
 }
 
-export const CloseTradeForm = ({ trade, onSubmit, onCancel }: CloseTradeFormProps) => {
+export const CloseTradeForm = ({
+  trade,
+  onSubmit,
+  onCancel,
+}: CloseTradeFormProps) => {
   const [formData, setFormData] = useState<TradeClose>({
     exitPrice: 0,
-    lessonsLearned: '',
+    lessonsLearned: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,8 +30,13 @@ export const CloseTradeForm = ({ trade, onSubmit, onCancel }: CloseTradeFormProp
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Close Trade: {trade.ticker}</h2>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Close Trade: {trade.ticker}
+            </h2>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -36,7 +45,13 @@ export const CloseTradeForm = ({ trade, onSubmit, onCancel }: CloseTradeFormProp
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Entry Price</p>
-                <p className="font-semibold">${trade.entryPrice.toFixed(2)}</p>
+                <p className="font-semibold">
+                  ₹
+                  {trade.entryPrice.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
               </div>
               <div>
                 <p className="text-gray-500">Size</p>
@@ -54,18 +69,35 @@ export const CloseTradeForm = ({ trade, onSubmit, onCancel }: CloseTradeFormProp
                 type="number"
                 required
                 step="0.01"
-                value={formData.exitPrice || ''}
-                onChange={(e) => setFormData({ ...formData, exitPrice: parseFloat(e.target.value) })}
+                value={formData.exitPrice || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    exitPrice: parseFloat(e.target.value),
+                  })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="155.00"
               />
             </div>
 
             {formData.exitPrice > 0 && (
-              <div className={`p-4 rounded-lg ${potentialPnL > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div
+                className={`p-4 rounded-lg ${
+                  potentialPnL > 0 ? "bg-green-50" : "bg-red-50"
+                }`}
+              >
                 <p className="text-sm text-gray-700 mb-1">Projected P&L</p>
-                <p className={`text-2xl font-bold ${potentialPnL > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${potentialPnL.toFixed(2)}
+                <p
+                  className={`text-2xl font-bold ${
+                    potentialPnL > 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  ₹
+                  {potentialPnL.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             )}
@@ -76,7 +108,9 @@ export const CloseTradeForm = ({ trade, onSubmit, onCancel }: CloseTradeFormProp
               </label>
               <textarea
                 value={formData.lessonsLearned}
-                onChange={(e) => setFormData({ ...formData, lessonsLearned: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lessonsLearned: e.target.value })
+                }
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="What did you learn from this trade?"

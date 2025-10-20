@@ -1,26 +1,62 @@
-import { useState } from 'react';
-import { TradeCreate } from '../types';
-import { X } from 'lucide-react';
+import { useState } from "react";
+import { TradeCreate } from "../types";
+import { tradesApi } from "../api/client";
+import { X } from "lucide-react";
 
 interface NewTradeFormProps {
-  onSubmit: (trade: TradeCreate) => void;
+  onSubmit: (trade: TradeCreate, currentPrice?: number) => void;
   onCancel: () => void;
 }
 
 export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
   const [formData, setFormData] = useState<TradeCreate>({
-    ticker: '',
-    direction: 'bullish',
+    ticker: "",
+    direction: "bullish",
     entryPrice: 0,
     stopLoss: 0,
     size: 0,
-    marketConditions: '',
-    emotions: '',
+    marketConditions: "",
+    emotions: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit(formData, checkedPrice ?? undefined);
+  };
+
+  const [checking, setChecking] = useState(false);
+  const [checkedPrice, setCheckedPrice] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [tickerValid, setTickerValid] = useState<boolean | null>(null);
+
+  const handleCheckTicker = async () => {
+    const ticker = formData.ticker.trim().toUpperCase();
+    if (!ticker) return;
+    setChecking(true);
+    setCheckedPrice(null);
+    setSuggestions([]);
+    setTickerValid(null);
+    try {
+      const res = await tradesApi.getQuote(ticker);
+      if (res.found && res.price) {
+        setCheckedPrice(res.price);
+        setTickerValid(true);
+      } else {
+        setTickerValid(false);
+        setSuggestions(res.suggestions || []);
+      }
+    } catch (err) {
+      console.error("Quote check failed", err);
+      setTickerValid(false);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const applySuggestion = (s: string) => {
+    setFormData({ ...formData, ticker: s });
+    setSuggestions([]);
+    // optionally auto-check
   };
 
   return (
@@ -29,7 +65,10 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">New Trade</h2>
-            <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -40,14 +79,97 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ticker Symbol *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.ticker}
-                  onChange={(e) => setFormData({ ...formData, ticker: e.target.value.toUpperCase() })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="AAPL"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={formData.ticker}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        ticker: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="AAPL"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCheckTicker}
+                    disabled={checking}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                  >
+                    {checking ? "Checking..." : "Check"}
+                  </button>
+                </div>
+
+                {tickerValid === true && checkedPrice !== null && (
+                  <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm font-medium text-green-800">
+                      ✓ Current price: ₹
+                      {checkedPrice.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                    {formData.entryPrice > 0 && formData.size > 0 && (
+                      <p className="text-xs text-green-700 mt-1">
+                        {formData.direction === "bullish"
+                          ? `If price stays at ₹${checkedPrice.toLocaleString(
+                              "en-IN",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}, P&L: ₹${(
+                              (checkedPrice - formData.entryPrice) *
+                              formData.size
+                            ).toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`
+                          : `If price stays at ₹${checkedPrice.toLocaleString(
+                              "en-IN",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}, P&L: ₹${(
+                              (formData.entryPrice - checkedPrice) *
+                              formData.size
+                            ).toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}`}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {tickerValid === false && (
+                  <div className="mt-2">
+                    <p className="text-sm text-red-600">
+                      Ticker not found. Suggestions:
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {suggestions.length > 0 ? (
+                        suggestions.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => applySuggestion(s)}
+                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
+                          >
+                            {s}
+                          </button>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">
+                          No suggestions available
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -57,7 +179,12 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                 <select
                   required
                   value={formData.direction}
-                  onChange={(e) => setFormData({ ...formData, direction: e.target.value as 'bullish' | 'bearish' })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      direction: e.target.value as "bullish" | "bearish",
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="bullish">Bullish</option>
@@ -73,8 +200,13 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                   type="number"
                   required
                   step="0.01"
-                  value={formData.entryPrice || ''}
-                  onChange={(e) => setFormData({ ...formData, entryPrice: parseFloat(e.target.value) })}
+                  value={formData.entryPrice || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      entryPrice: parseFloat(e.target.value),
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="150.00"
                 />
@@ -88,8 +220,13 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                   type="number"
                   required
                   step="0.01"
-                  value={formData.stopLoss || ''}
-                  onChange={(e) => setFormData({ ...formData, stopLoss: parseFloat(e.target.value) })}
+                  value={formData.stopLoss || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      stopLoss: parseFloat(e.target.value),
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="148.00"
                 />
@@ -102,8 +239,10 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                 <input
                   type="number"
                   required
-                  value={formData.size || ''}
-                  onChange={(e) => setFormData({ ...formData, size: parseInt(e.target.value) })}
+                  value={formData.size || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, size: parseInt(e.target.value) })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="100"
                 />
@@ -116,7 +255,9 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
               </label>
               <textarea
                 value={formData.marketConditions}
-                onChange={(e) => setFormData({ ...formData, marketConditions: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, marketConditions: e.target.value })
+                }
                 rows={3}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe market conditions, support/resistance levels, etc."
@@ -130,7 +271,9 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
               <input
                 type="text"
                 value={formData.emotions}
-                onChange={(e) => setFormData({ ...formData, emotions: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, emotions: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Confident, anxious, etc."
               />

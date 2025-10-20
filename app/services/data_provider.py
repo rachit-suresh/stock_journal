@@ -5,6 +5,7 @@ import asyncio
 from typing import List, Set
 from app.services.websocket_manager import ConnectionManager
 from app.services.alert_service import check_for_alerts
+from app.services.currency_service import currency_service
 
 
 class FinnhubDataProvider:
@@ -21,20 +22,25 @@ class FinnhubDataProvider:
         if data['type'] == 'trade':
             for trade in data['data']:
                 ticker = trade['s']
-                price = trade['p']
+                price_usd = trade['p']
                 
                 # Get the asyncio event loop of the main thread
                 loop = asyncio.get_event_loop()
                 
-                # Schedule the async broadcast_price coroutine
+                # Convert USD to INR and broadcast
                 asyncio.run_coroutine_threadsafe(
-                    self.manager.broadcast_price(ticker, price), loop
+                    self._process_price_update(ticker, price_usd), loop
                 )
-                
-                # Schedule the async alert check coroutine
-                asyncio.run_coroutine_threadsafe(
-                    check_for_alerts(ticker, price, self.manager), loop
-                )
+    
+    async def _process_price_update(self, ticker: str, price_usd: float):
+        """Convert USD price to INR and broadcast."""
+        price_inr = await currency_service.convert_usd_to_inr(price_usd)
+        
+        # Broadcast price in INR
+        await self.manager.broadcast_price(ticker, price_inr)
+        
+        # Check for alerts using INR price
+        await check_for_alerts(ticker, price_inr, self.manager)
 
     def on_open(self, ws):
         print("Finnhub WebSocket connection opened")

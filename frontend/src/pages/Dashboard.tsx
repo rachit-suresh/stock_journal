@@ -6,7 +6,7 @@ import { NewTradeForm } from "../components/NewTradeForm";
 import { CloseTradeForm } from "../components/CloseTradeForm";
 import { AlertBanner } from "../components/AlertBanner";
 import { getWebSocketService } from "../services/websocket";
-import { Plus, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { Plus, TrendingUp, IndianRupee, Activity } from "lucide-react";
 
 export const Dashboard = () => {
   const [openTrades, setOpenTrades] = useState<Trade[]>([]);
@@ -15,9 +15,11 @@ export const Dashboard = () => {
   const [tradeToClose, setTradeToClose] = useState<Trade | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [alerts, setAlerts] = useState<AlertType[]>([]);
+  const [winRate, setWinRate] = useState<number | null>(null);
 
   useEffect(() => {
     loadOpenTrades();
+    loadStatistics();
 
     const wsService = getWebSocketService();
     wsService.connect();
@@ -48,6 +50,13 @@ export const Dashboard = () => {
       const wsService = getWebSocketService();
       const tickers = openTrades.map((t) => t.ticker);
       wsService.subscribe(tickers);
+
+      // Poll for price updates every 5 seconds as backup
+      const intervalId = setInterval(() => {
+        fetchInitialPrices(tickers);
+      }, 5000);
+
+      return () => clearInterval(intervalId);
     }
   }, [openTrades]);
 
@@ -56,6 +65,9 @@ export const Dashboard = () => {
       const trades = await tradesApi.getOpenTrades();
       console.log("Loaded trades:", trades);
       setOpenTrades(trades);
+
+      // Fetch initial prices for all tickers
+      await fetchInitialPrices(trades.map((t) => t.ticker));
     } catch (error) {
       console.error("Failed to load trades:", error);
     } finally {
@@ -63,9 +75,48 @@ export const Dashboard = () => {
     }
   };
 
-  const handleCreateTrade = async (tradeData: any) => {
+  const fetchInitialPrices = async (tickers: string[]) => {
+    const uniqueTickers = [...new Set(tickers)];
+    const pricePromises = uniqueTickers.map(async (ticker) => {
+      try {
+        const quote = await tradesApi.getQuote(ticker);
+        if (quote.found && quote.price) {
+          return { ticker, price: quote.price };
+        }
+      } catch (error) {
+        console.error(`Failed to fetch price for ${ticker}:`, error);
+      }
+      return null;
+    });
+
+    const results = await Promise.all(pricePromises);
+    const newPrices: Record<string, number> = {};
+    results.forEach((result) => {
+      if (result) {
+        newPrices[result.ticker] = result.price;
+      }
+    });
+    setPrices((prev) => ({ ...prev, ...newPrices }));
+  };
+
+  const loadStatistics = async () => {
+    try {
+      const stats = await tradesApi.getStatistics();
+      setWinRate(stats.win_rate);
+    } catch (error) {
+      console.error("Failed to load statistics:", error);
+    }
+  };
+
+  const handleCreateTrade = async (tradeData: any, currentPrice?: number) => {
     try {
       await tradesApi.createTrade(tradeData);
+
+      // If we have the current price from the check, set it immediately
+      if (currentPrice && tradeData.ticker) {
+        setPrices((prev) => ({ ...prev, [tradeData.ticker]: currentPrice }));
+      }
+
       setShowNewTradeForm(false);
       loadOpenTrades();
     } catch (error) {
@@ -125,31 +176,19 @@ export const Dashboard = () => {
         />
       ))}
 
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Trading Journal
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Track and analyze your trades
-              </p>
-            </div>
-            <button
-              onClick={() => setShowNewTradeForm(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Trade
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistics */}
+      {/* Statistics and Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Open Positions</h2>
+          <button
+            onClick={() => setShowNewTradeForm(true)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            New Trade
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
@@ -165,7 +204,7 @@ export const Dashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
-              <DollarSign className="w-8 h-8 text-green-500 mr-3" />
+              <IndianRupee className="w-8 h-8 text-green-500 mr-3" />
               <div>
                 <p className="text-sm text-gray-500">Unrealized P&L</p>
                 <p
@@ -173,7 +212,11 @@ export const Dashboard = () => {
                     totalUnrealizedPnL >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  ${totalUnrealizedPnL.toFixed(2)}
+                  ₹
+                  {totalUnrealizedPnL.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
@@ -184,7 +227,9 @@ export const Dashboard = () => {
               <TrendingUp className="w-8 h-8 text-purple-500 mr-3" />
               <div>
                 <p className="text-sm text-gray-500">Win Rate</p>
-                <p className="text-2xl font-bold text-gray-900">-</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {winRate !== null ? `${winRate.toFixed(1)}%` : "-"}
+                </p>
               </div>
             </div>
           </div>
