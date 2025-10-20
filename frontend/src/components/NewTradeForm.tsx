@@ -28,6 +28,7 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
   const [checkedPrice, setCheckedPrice] = useState<number | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [tickerValid, setTickerValid] = useState<boolean | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const handleCheckTicker = async () => {
     const ticker = formData.ticker.trim().toUpperCase();
@@ -36,11 +37,13 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
     setCheckedPrice(null);
     setSuggestions([]);
     setTickerValid(null);
+    setWarning(null);
     try {
       const res = await tradesApi.getQuote(ticker);
       if (res.found && res.price) {
         setCheckedPrice(res.price);
         setTickerValid(true);
+        setWarning(res.warning || null);
       } else {
         setTickerValid(false);
         setSuggestions(res.suggestions || []);
@@ -104,46 +107,53 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                 </div>
 
                 {tickerValid === true && checkedPrice !== null && (
-                  <div className="mt-2 p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
-                      ✓ Current price: ₹
-                      {checkedPrice.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                    {formData.entryPrice > 0 && formData.size > 0 && (
-                      <p className="text-xs text-green-700 mt-1">
-                        {formData.direction === "bullish"
-                          ? `If price stays at ₹${checkedPrice.toLocaleString(
-                              "en-IN",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
-                            )}, P&L: ₹${(
-                              (checkedPrice - formData.entryPrice) *
-                              formData.size
-                            ).toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}`
-                          : `If price stays at ₹${checkedPrice.toLocaleString(
-                              "en-IN",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
-                            )}, P&L: ₹${(
-                              (formData.entryPrice - checkedPrice) *
-                              formData.size
-                            ).toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}`}
+                  <>
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                      <p className="text-sm font-medium text-green-800">
+                        ✓ Current price: ₹
+                        {checkedPrice.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
+                      {formData.entryPrice > 0 && formData.size > 0 && (
+                        <p className="text-xs text-green-700 mt-1">
+                          {formData.direction === "bullish"
+                            ? `If price stays at ₹${checkedPrice.toLocaleString(
+                                "en-IN",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}, P&L: ₹${(
+                                (checkedPrice - formData.entryPrice) *
+                                formData.size
+                              ).toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`
+                            : `If price stays at ₹${checkedPrice.toLocaleString(
+                                "en-IN",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}, P&L: ₹${(
+                                (formData.entryPrice - checkedPrice) *
+                                formData.size
+                              ).toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`}
+                        </p>
+                      )}
+                    </div>
+                    {warning && (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">{warning}</p>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
                 {tickerValid === false && (
                   <div className="mt-2">

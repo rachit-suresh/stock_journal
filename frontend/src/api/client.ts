@@ -59,7 +59,12 @@ export const tradesApi = {
   ): Promise<{
     found: boolean;
     price: number | null;
+    price_inr: number | null;
+    price_usd: number | null;
+    exchange_rate: number;
     suggestions: string[];
+    warning?: string | null;
+    is_adr?: boolean;
   }> => {
     const response = await apiClient.get(`/api/v1/trades/quotes/${ticker}`);
     return response.data;

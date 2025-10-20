@@ -7,6 +7,7 @@ from datetime import datetime
 import httpx
 from app.core.config import settings
 from app.services.currency_service import currency_service
+from app.utils.indian_stocks import is_indian_adr, get_adr_warning
 
 router = APIRouter(
     prefix="/api/v1/trades", 
@@ -184,11 +185,16 @@ async def get_quote(ticker: str):
             except Exception:
                 suggestions = []
 
+    # Check if this is an Indian ADR (will show wrong price)
+    warning = get_adr_warning(ticker) if found else None
+    
     return {
         "found": found, 
         "price": price_inr,  # Primary price in INR
         "price_inr": price_inr,
         "price_usd": price_usd,
         "exchange_rate": exchange_rate,
-        "suggestions": suggestions
+        "suggestions": suggestions,
+        "warning": warning,  # Warning for Indian ADRs
+        "is_adr": is_indian_adr(ticker)  # Flag to indicate ADR
     }
