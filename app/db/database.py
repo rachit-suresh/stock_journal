@@ -11,3 +11,7 @@ def get_trades_collection():
 
 def get_setups_collection():
     return database.get_collection("setups")
+
+
+def get_users_collection():
+    return database.get_collection("users")

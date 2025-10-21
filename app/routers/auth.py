@@ -45,7 +45,7 @@ async def register(request: RegisterRequest):
             detail="Password must be at least 6 characters long",
         )
     
-    user = register_user(request.username, request.password, request.email)
+    user = await register_user(request.username, request.password, request.email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -65,12 +65,8 @@ async def register(request: RegisterRequest):
 async def login(request: LoginRequest):
     """
     Login with username and password to get an access token.
-    
-    Demo credentials:
-    - Username: demo
-    - Password: demo123
     """
-    user = authenticate_user(request.username, request.password)
+    user = await authenticate_user(request.username, request.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
