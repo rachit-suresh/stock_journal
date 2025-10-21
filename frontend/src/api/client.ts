@@ -37,17 +37,17 @@ apiClient.interceptors.response.use(
 // Trades API
 export const tradesApi = {
   createTrade: async (trade: TradeCreate): Promise<Trade> => {
-    const response = await apiClient.post<Trade>("/api/v1/trades/", trade);
+    const response = await apiClient.post<Trade>("/trades/", trade);
     return response.data;
   },
 
   getOpenTrades: async (): Promise<Trade[]> => {
-    const response = await apiClient.get<Trade[]>("/api/v1/trades/open");
+    const response = await apiClient.get<Trade[]>("/trades/open");
     return response.data;
   },
 
   getClosedTrades: async (): Promise<Trade[]> => {
-    const response = await apiClient.get<Trade[]>("/api/v1/trades/closed");
+    const response = await apiClient.get<Trade[]>("/trades/closed");
     return response.data;
   },
 
@@ -56,14 +56,14 @@ export const tradesApi = {
     closeData: TradeClose
   ): Promise<Trade> => {
     const response = await apiClient.put<Trade>(
-      `/api/v1/trades/${tradeId}/close`,
+      `/trades/${tradeId}/close`,
       closeData
     );
     return response.data;
   },
 
   deleteTrade: async (tradeId: string): Promise<void> => {
-    await apiClient.delete(`/api/v1/trades/${tradeId}`);
+    await apiClient.delete(`/trades/${tradeId}`);
   },
 
   getStatistics: async (): Promise<{
@@ -74,7 +74,7 @@ export const tradesApi = {
     win_rate: number;
     total_pnl: number;
   }> => {
-    const response = await apiClient.get("/api/v1/trades/statistics");
+    const response = await apiClient.get("/trades/statistics");
     return response.data;
   },
   getQuote: async (
@@ -89,7 +89,7 @@ export const tradesApi = {
     warning?: string | null;
     is_adr?: boolean;
   }> => {
-    const response = await apiClient.get(`/api/v1/trades/quotes/${ticker}`);
+    const response = await apiClient.get(`/trades/quotes/${ticker}`);
     return response.data;
   },
 };
@@ -97,12 +97,12 @@ export const tradesApi = {
 // Setups API
 export const setupsApi = {
   createSetup: async (setup: SetupCreate): Promise<Setup> => {
-    const response = await apiClient.post<Setup>("/api/v1/setups/", setup);
+    const response = await apiClient.post<Setup>("/setups/", setup);
     return response.data;
   },
 
   getAllSetups: async (): Promise<Setup[]> => {
-    const response = await apiClient.get<Setup[]>("/api/v1/setups/");
+    const response = await apiClient.get<Setup[]>("/setups/");
     return response.data;
   },
 };
