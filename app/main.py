@@ -25,12 +25,15 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Development
         "http://localhost:5173",  # Vite dev server (primary)
         "http://localhost:5174",  # Vite dev server (alternate port)
         "http://localhost:3000",  # Alternative dev server
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
         "http://127.0.0.1:3000",
+        # Production - Add your Vercel frontend URL here
+        "https://stock-journal-three.vercel.app",  # Update with your actual Vercel URL
     ],
     allow_credentials=True,
     allow_methods=["*"],
