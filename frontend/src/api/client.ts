@@ -3,7 +3,8 @@ import { Trade, TradeCreate, TradeClose, Setup, SetupCreate } from "../types";
 import { authService } from "../services/auth";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://stock-journal-api-8u38.onrender.com";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

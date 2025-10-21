@@ -28,7 +28,7 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseUrl = "http://localhost:8000/api/v1/auth";
+  private baseUrl = "https://stock-journal-api-8u38.onrender.com";
 
   /**
    * Get the stored JWT token
