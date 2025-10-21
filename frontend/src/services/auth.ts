@@ -28,7 +28,7 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseUrl = "https://stock-journal-api-8u38.onrender.com";
+  private baseUrl = import.meta.env.VITE_AUTH_BASE_URL;
 
   /**
    * Get the stored JWT token

@@ -2,9 +2,7 @@ import axios from "axios";
 import { Trade, TradeCreate, TradeClose, Setup, SetupCreate } from "../types";
 import { authService } from "../services/auth";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://stock-journal-api-8u38.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -12,7 +10,6 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
-
 // Add JWT token to all requests
 apiClient.interceptors.request.use(
   (config) => {
