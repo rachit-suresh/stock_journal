@@ -115,13 +115,13 @@ export const History = () => {
                     <div>
                       <p className="text-sm text-gray-500">Entry Price</p>
                       <p className="text-lg font-semibold text-gray-900">
-                        ${trade.entryPrice.toFixed(2)}
+                        ₹{trade.entryPrice.toFixed(2)}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Exit Price</p>
                       <p className="text-lg font-semibold text-gray-900">
-                        ${trade.exitPrice?.toFixed(2)}
+                        ₹{trade.exitPrice?.toFixed(2)}
                       </p>
                     </div>
                     <div>
@@ -133,7 +133,7 @@ export const History = () => {
                     <div>
                       <p className="text-sm text-gray-500">Stop Loss</p>
                       <p className="text-lg font-semibold text-red-600">
-                        ${trade.stopLoss.toFixed(2)}
+                        ₹{trade.stopLoss.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -155,7 +155,7 @@ export const History = () => {
                               : "text-red-600"
                           }`}
                         >
-                          ${trade.result_pnl.toFixed(2)}
+                          ₹{trade.result_pnl.toFixed(2)}
                         </span>
                       </div>
                     </div>
