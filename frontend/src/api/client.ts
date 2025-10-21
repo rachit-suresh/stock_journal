@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Trade, TradeCreate, TradeClose, Setup, SetupCreate } from "../types";
+import { authService } from "../services/auth";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -10,6 +11,30 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Add JWT token to all requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = authService.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle 401 errors (redirect to login)
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      authService.logout();
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Trades API
 export const tradesApi = {

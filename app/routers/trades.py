@@ -4,22 +4,20 @@ from app.models.trade import TradeCreate, TradeClose, TradeOut, TradeDB
 from bson import ObjectId
 from typing import List
 from datetime import datetime
-import httpx
 from app.core.config import settings
-from app.services.currency_service import currency_service
-from app.utils.indian_stocks import is_indian_adr, get_adr_warning
+from app.core.auth import get_current_user_id
 
 router = APIRouter(
     prefix="/api/v1/trades", 
     tags=["Trades"],
 )
-USER_ID = "static_user_id"  # Placeholder
 
 
 @router.post("/", response_model=TradeOut, response_model_by_alias=True, status_code=status.HTTP_201_CREATED)
 async def create_trade(
     trade: TradeCreate,
-    collection=Depends(get_trades_collection)
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
 ):
     trade_data = trade.model_dump()
     # Set entryDate if not provided
@@ -28,7 +26,7 @@ async def create_trade(
     
     trade_db = TradeDB(
         **trade_data,
-        user_id=USER_ID,
+        user_id=user_id,
         status="open"
     )
     # Exclude None values to let MongoDB auto-generate _id
@@ -39,18 +37,24 @@ async def create_trade(
 
 
 @router.get("/open", response_model=List[TradeOut], response_model_by_alias=True)
-async def get_open_trades(collection=Depends(get_trades_collection)):
+async def get_open_trades(
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
+):
     trades = []
-    cursor = collection.find({"user_id": USER_ID, "status": "open"})
+    cursor = collection.find({"user_id": user_id, "status": "open"})
     async for doc in cursor:
         trades.append(TradeOut.model_validate(doc))
     return trades
 
 
 @router.get("/closed", response_model=List[TradeOut], response_model_by_alias=True)
-async def get_closed_trades(collection=Depends(get_trades_collection)):
+async def get_closed_trades(
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
+):
     trades = []
-    cursor = collection.find({"user_id": USER_ID, "status": "closed"})
+    cursor = collection.find({"user_id": user_id, "status": "closed"})
     async for doc in cursor:
         trades.append(TradeOut.model_validate(doc))
     return trades
@@ -60,10 +64,11 @@ async def get_closed_trades(collection=Depends(get_trades_collection)):
 async def close_trade(
     trade_id: str,
     trade_close: TradeClose,
-    collection=Depends(get_trades_collection)
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
 ):
     trade_oid = ObjectId(trade_id)
-    trade_db = await collection.find_one({"_id": trade_oid, "user_id": USER_ID})
+    trade_db = await collection.find_one({"_id": trade_oid, "user_id": user_id})
     
     if not trade_db:
         raise HTTPException(status_code=404, detail="Trade not found")
@@ -96,11 +101,12 @@ async def close_trade(
 @router.delete("/{trade_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_trade(
     trade_id: str,
-    collection=Depends(get_trades_collection)
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
 ):
     """Permanently delete a trade from the database."""
     trade_oid = ObjectId(trade_id)
-    result = await collection.delete_one({"_id": trade_oid, "user_id": USER_ID})
+    result = await collection.delete_one({"_id": trade_oid, "user_id": user_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Trade not found")
@@ -109,11 +115,14 @@ async def delete_trade(
 
 
 @router.get("/statistics")
-async def get_statistics(collection=Depends(get_trades_collection)):
+async def get_statistics(
+    collection=Depends(get_trades_collection),
+    user_id: str = Depends(get_current_user_id)
+):
     """Get trading statistics including win rate."""
     # Get all closed trades
     closed_trades = []
-    cursor = collection.find({"user_id": USER_ID, "status": "closed"})
+    cursor = collection.find({"user_id": user_id, "status": "closed"})
     async for doc in cursor:
         closed_trades.append(doc)
     
@@ -138,63 +147,111 @@ async def get_statistics(collection=Depends(get_trades_collection)):
 
 
 @router.get('/quotes/{ticker}')
-async def get_quote(ticker: str):
-    """Fetch a current quote for a ticker from Finnhub REST API.
-    Returns price in INR: {found: bool, price_inr: float | None, price_usd: float | None, exchange_rate: float, suggestions: list[str]}.
+async def get_quote(ticker: str, use_mock: bool = False):
+    """Fetch a current quote for a ticker from Finnhub (US stocks).
+    Converts USD prices to INR using exchange rate API.
+    Returns: {found: bool, price_inr: float | None, price_usd: float | None, warning: str | None, suggestions: list}.
+    Set use_mock=true to use mock data during development.
     """
-    api_key = settings.FINNHUB_API_KEY
-    # Use Finnhub quote endpoint
-    quote_url = f'https://finnhub.io/api/v1/quote?symbol={ticker}&token={api_key}'
-    search_url = f'https://finnhub.io/api/v1/search?q={ticker}&token={api_key}'
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            r = await client.get(quote_url)
-            r.raise_for_status()
-            data = r.json()
-        except Exception:
-            data = None
-
-        # Finnhub returns 0 or null when symbol doesn't exist or no data
-        price_usd = None
-        price_inr = None
-        found = False
-        exchange_rate = await currency_service.get_usd_to_inr_rate()
-        
-        if data:
-            # data contains 'c' as current price in USD
-            current = data.get('c')
-            if current and current != 0:
-                price_usd = float(current)
-                price_inr = await currency_service.convert_usd_to_inr(price_usd)
-                found = True
-
-        suggestions: list[str] = []
-        if not found:
-            # Try search for similar tickers
-            try:
-                r2 = await client.get(search_url)
-                r2.raise_for_status()
-                sdata = r2.json()
-                # sdata['result'] is a list of matches
-                for item in sdata.get('result', [])[:5]:
-                    desc = item.get('description') or item.get('displaySymbol') or item.get('symbol')
-                    sym = item.get('symbol')
-                    if sym:
-                        suggestions.append(sym)
-            except Exception:
-                suggestions = []
-
-    # Check if this is an Indian ADR (will show wrong price)
-    warning = get_adr_warning(ticker) if found else None
+    # Use mock service if requested or if configured in settings
+    use_mock_data = use_mock or settings.USE_MOCK_PRICES
     
-    return {
-        "found": found, 
-        "price": price_inr,  # Primary price in INR
-        "price_inr": price_inr,
-        "price_usd": price_usd,
-        "exchange_rate": exchange_rate,
-        "suggestions": suggestions,
-        "warning": warning,  # Warning for Indian ADRs
-        "is_adr": is_indian_adr(ticker)  # Flag to indicate ADR
-    }
+    if use_mock_data:
+        from app.services.mock_price_service import mock_price_service
+        price_service = mock_price_service
+    else:
+        # Use Finnhub API
+        from app.services.finnhub_service import get_finnhub_service
+        from app.services.exchange_rate_service import get_exchange_rate_service
+        
+        finnhub = get_finnhub_service(settings.FINNHUB_API_KEY)
+        exchange_rate_svc = get_exchange_rate_service(
+            settings.EXCHANGE_RATE_API_KEY,
+            settings.EXCHANGE_RATE_PROVIDER
+        )
+    
+    try:
+        if use_mock_data:
+            # Mock service returns INR prices
+            quote = price_service.get_quote(ticker)
+            return {
+                "found": True,
+                "ticker": quote['ticker'],
+                "name": quote.get('name', ticker),
+                "price_inr": quote.get('price'),
+                "price_usd": None,
+                "exchange_rate": None,
+                "mock": True,
+                "warning": "Using mock data for development",
+                "suggestions": []
+            }
+        
+        # Get quote from Finnhub
+        quote = finnhub.get_quote(ticker)
+        
+        if not quote['found']:
+            # Ticker not found - get suggestions
+            suggestions = finnhub.search_symbol(ticker) if ticker.strip() else []
+            return {
+                "found": False,
+                "ticker": ticker,
+                "name": None,
+                "price_inr": None,
+                "price_usd": None,
+                "exchange_rate": None,
+                "warning": quote.get('warning', f"Ticker '{ticker}' not found on Finnhub."),
+                "suggestions": suggestions
+            }
+        
+        # Quote found - convert USD to INR
+        price_usd = quote['price']
+        exchange_rate = exchange_rate_svc.get_usd_to_inr_rate()
+        price_inr = price_usd * exchange_rate
+        
+        response_data = {
+            "found": True,
+            "ticker": quote['ticker'],
+            "name": quote['ticker'],  # Finnhub quote doesn't include name
+            "price_inr": round(price_inr, 2),
+            "price_usd": round(price_usd, 2),
+            "exchange_rate": round(exchange_rate, 2),
+            "warning": quote.get('warning'),
+            "suggestions": []
+        }
+        
+        return response_data
+        
+    except Exception as e:
+        # Unexpected error
+        return {
+            "found": False,
+            "ticker": ticker,
+            "name": None,
+            "price_inr": None,
+            "price_usd": None,
+            "exchange_rate": None,
+            "warning": f"Error fetching quote: {str(e)}",
+            "suggestions": []
+        }
+
+
+@router.get('/service-status')
+async def get_service_status():
+    """Get price service status (Finnhub or Mock)."""
+    if settings.USE_MOCK_PRICES:
+        from app.services.mock_price_service import mock_price_service
+        return mock_price_service.get_status()
+    else:
+        from app.services.finnhub_service import get_finnhub_service
+        from app.services.exchange_rate_service import get_exchange_rate_service
+        
+        finnhub = get_finnhub_service(settings.FINNHUB_API_KEY)
+        exchange_rate_svc = get_exchange_rate_service(
+            settings.EXCHANGE_RATE_API_KEY,
+            settings.EXCHANGE_RATE_PROVIDER
+        )
+        
+        return {
+            "finnhub": finnhub.get_status(),
+            "exchange_rate": exchange_rate_svc.get_status()
+        }

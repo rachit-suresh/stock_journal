@@ -11,12 +11,10 @@ export class WebSocketService {
   private alertHandlers: AlertHandler[] = [];
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private userId: string;
+  private reconnectTimeout: number | null = null;
   private wsUrl: string;
 
   constructor(userId: string, baseUrl?: string) {
-    this.userId = userId;
     const base = baseUrl || import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000';
     this.wsUrl = `${base}/ws/${userId}`;
   }

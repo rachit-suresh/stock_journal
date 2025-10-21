@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { tradesApi } from "../api/client";
-import { Trade, Alert as AlertType, PriceUpdate } from "../types";
+import { Trade, Alert as AlertType, PriceUpdate, TradeCreate, TradeClose } from "../types";
 import { TradeCard } from "../components/TradeCard";
 import { NewTradeForm } from "../components/NewTradeForm";
 import { CloseTradeForm } from "../components/CloseTradeForm";
@@ -51,10 +51,10 @@ export const Dashboard = () => {
       const tickers = openTrades.map((t) => t.ticker);
       wsService.subscribe(tickers);
 
-      // Poll for price updates every 5 seconds as backup
+      // Poll for price updates every 30 seconds (respects Finnhub rate limits with caching)
       const intervalId = setInterval(() => {
         fetchInitialPrices(tickers);
-      }, 5000);
+      }, 30000); // 30 seconds
 
       return () => clearInterval(intervalId);
     }
@@ -77,11 +77,19 @@ export const Dashboard = () => {
 
   const fetchInitialPrices = async (tickers: string[]) => {
     const uniqueTickers = [...new Set(tickers)];
+
+    if (uniqueTickers.length === 0) {
+      console.log("No tickers to fetch prices for");
+      return;
+    }
+
+    console.log("Fetching prices for tickers:", uniqueTickers);
+
     const pricePromises = uniqueTickers.map(async (ticker) => {
       try {
         const quote = await tradesApi.getQuote(ticker);
-        if (quote.found && quote.price) {
-          return { ticker, price: quote.price };
+        if (quote.found && quote.price_inr) {
+          return { ticker, price: quote.price_inr };
         }
       } catch (error) {
         console.error(`Failed to fetch price for ${ticker}:`, error);
@@ -108,7 +116,7 @@ export const Dashboard = () => {
     }
   };
 
-  const handleCreateTrade = async (tradeData: any, currentPrice?: number) => {
+  const handleCreateTrade = async (tradeData: TradeCreate, currentPrice?: number) => {
     try {
       await tradesApi.createTrade(tradeData);
 
@@ -124,7 +132,7 @@ export const Dashboard = () => {
     }
   };
 
-  const handleCloseTrade = async (closeData: any) => {
+  const handleCloseTrade = async (closeData: TradeClose) => {
     if (!tradeToClose) return;
 
     console.log("Closing trade:", tradeToClose);

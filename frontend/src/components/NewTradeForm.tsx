@@ -40,13 +40,14 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
     setWarning(null);
     try {
       const res = await tradesApi.getQuote(ticker);
-      if (res.found && res.price) {
-        setCheckedPrice(res.price);
+      if (res.found && res.price_inr) {
+        setCheckedPrice(res.price_inr);
         setTickerValid(true);
         setWarning(res.warning || null);
       } else {
         setTickerValid(false);
         setSuggestions(res.suggestions || []);
+        setWarning(res.warning || null);
       }
     } catch (err) {
       console.error("Quote check failed", err);
@@ -94,7 +95,7 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                       })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="AAPL"
+                    placeholder="AAPL or INFY"
                   />
                   <button
                     type="button"
@@ -157,27 +158,31 @@ export const NewTradeForm = ({ onSubmit, onCancel }: NewTradeFormProps) => {
                 )}
                 {tickerValid === false && (
                   <div className="mt-2">
-                    <p className="text-sm text-red-600">
-                      Ticker not found. Suggestions:
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {suggestions.length > 0 ? (
-                        suggestions.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => applySuggestion(s)}
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
-                          >
-                            {s}
-                          </button>
-                        ))
-                      ) : (
-                        <span className="text-sm text-gray-500">
-                          No suggestions available
-                        </span>
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm font-medium text-red-800">
+                        Ticker not found
+                      </p>
+                      {warning && (
+                        <p className="text-xs text-red-600 mt-1">{warning}</p>
                       )}
                     </div>
+                    {suggestions.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600 mb-2">Try these suggestions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {suggestions.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => applySuggestion(s)}
+                              className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-full text-sm font-medium"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

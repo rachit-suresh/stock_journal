@@ -5,6 +5,15 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.main import app
 from app.db.database import database
 from app.core.config import settings
+from app.core.auth import get_current_user_id
+
+# Mock user ID for all tests
+TEST_USER_ID = "test_user_123"
+
+
+async def override_get_current_user_id():
+    """Override authentication dependency for tests."""
+    return TEST_USER_ID
 
 
 @pytest.fixture(scope="session")
@@ -18,9 +27,15 @@ def event_loop():
 
 @pytest.fixture
 async def client():
-    """Create an async test client for the FastAPI app."""
+    """Create an async test client for the FastAPI app with auth bypassed."""
+    # Override authentication for tests
+    app.dependency_overrides[get_current_user_id] = override_get_current_user_id
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
+    
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -36,14 +51,20 @@ async def test_db():
 
 @pytest.fixture
 async def trades_collection(test_db):
-    """Get test trades collection."""
-    return test_db.get_collection("trades")
+    """Get test trades collection with cleanup."""
+    collection = test_db.get_collection("trades")
+    # Clear before each test for isolation
+    await collection.delete_many({"user_id": TEST_USER_ID})
+    return collection
 
 
 @pytest.fixture
 async def setups_collection(test_db):
-    """Get test setups collection."""
-    return test_db.get_collection("setups")
+    """Get test setups collection with cleanup."""
+    collection = test_db.get_collection("setups")
+    # Clear before each test for isolation
+    await collection.delete_many({"user_id": TEST_USER_ID})
+    return collection
 
 
 @pytest.fixture
