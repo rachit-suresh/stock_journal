@@ -14,54 +14,54 @@ All changes have been committed and pushed to: `https://github.com/rachit-suresh
 
 ---
 
-## 🚀 Backend Deployment (Railway)
+## 🚀 Backend Deployment (Render - Free Tier)
 
-### Option 1: Deploy via Railway CLI
+### Deploy via Render Dashboard
 
-1. **Install Railway CLI:**
-   ```bash
-   npm i -g @railway/cli
+1. **Go to [Render.com](https://render.com) and sign up/login**
+
+2. **Click "New +" → "Web Service"**
+
+3. **Connect your GitHub repository:**
+   - Select `rachit-suresh/stock_journal`
+   - Click "Connect"
+
+4. **Configure the service:**
+   - **Name:** `stock-journal-api` (or your choice)
+   - **Region:** Choose closest to you
+   - **Branch:** `main`
+   - **Root Directory:** Leave empty (root)
+   - **Runtime:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance Type:** `Free`
+
+5. **Add Environment Variables:**
+   
+   Click "Advanced" → Add the following environment variables:
+   
+   ```
+   MONGO_CONNECTION_STRING=your_mongodb_connection_string
+   MONGO_DB_NAME=trading_journal
+   FINNHUB_API_KEY=your_finnhub_api_key
+   EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
+   USE_MOCK_PRICES=false
+   PYTHON_VERSION=3.11.0
    ```
 
-2. **Login to Railway:**
-   ```bash
-   railway login
-   ```
+6. **Click "Create Web Service"**
 
-3. **Initialize and deploy:**
-   ```bash
-   railway init
-   railway up
-   ```
+   Render will automatically deploy your app. This takes 2-5 minutes.
 
-### Option 2: Deploy via Railway Dashboard
+7. **Get your backend URL:**
+   
+   Render will provide a URL like: `https://stock-journal-api.onrender.com`
 
-1. Go to [Railway.app](https://railway.app)
-2. Click "New Project" → "Deploy from GitHub repo"
-3. Select `rachit-suresh/stock_journal`
-4. Railway will auto-detect the Python app
+### ⚠️ Important Notes for Render Free Tier:
 
-### Required Environment Variables (Railway):
-
-Add these in Railway dashboard under Variables:
-
-```
-MONGO_CONNECTION_STRING=your_mongodb_connection_string
-MONGO_DB_NAME=trading_journal
-FINNHUB_API_KEY=your_finnhub_api_key
-EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
-USE_MOCK_PRICES=false
-```
-
-### Configure Start Command:
-
-Railway Settings → Deploy → Start Command:
-```
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-### Get your backend URL:
-Railway will provide a URL like: `https://your-app.railway.app`
+- **Cold starts:** Free tier spins down after 15 minutes of inactivity. First request after inactivity may take 30-60 seconds.
+- **Monthly limits:** 750 hours/month (enough for one service running 24/7)
+- **Automatic deploys:** Enabled by default on push to main branch
 
 ---
 
@@ -96,13 +96,15 @@ After backend is deployed, update frontend to use production backend URL:
 
 **Edit `frontend/src/services/auth.ts`:**
 ```typescript
-private baseUrl = "https://your-app.railway.app/api/v1/auth";
+private baseUrl = "https://stock-journal-api.onrender.com/api/v1/auth";
 ```
 
 **Edit `frontend/src/api/client.ts`:**
 ```typescript
-const API_BASE_URL = "https://your-app.railway.app/api/v1";
+const API_BASE_URL = "https://stock-journal-api.onrender.com/api/v1";
 ```
+
+(Replace with your actual Render URL)
 
 ### Redeploy frontend:
 ```bash
@@ -154,7 +156,7 @@ If you don't have MongoDB yet:
 
 ## 📝 Post-Deployment Checklist
 
-- [ ] Backend deployed and running on Railway
+- [ ] Backend deployed and running on Render
 - [ ] MongoDB connection working
 - [ ] Environment variables set correctly
 - [ ] Frontend deployed to Vercel/Netlify
@@ -163,6 +165,7 @@ If you don't have MongoDB yet:
 - [ ] Test user login at `/login`
 - [ ] Test creating trades
 - [ ] Test price fetching with real Finnhub API
+- [ ] Note: First request may be slow due to Render free tier cold start
 
 ---
 
@@ -182,9 +185,11 @@ After deployment:
 ## 🐛 Troubleshooting
 
 ### Backend issues:
-- Check Railway logs: `railway logs`
-- Verify all environment variables are set
+- Check Render logs in the dashboard (Logs tab)
+- Verify all environment variables are set in Render dashboard
 - Check MongoDB connection string format
+- If service won't start, check the "Events" tab for build errors
+- Cold start delays are normal on free tier (30-60 seconds)
 
 ### Frontend issues:
 - Verify API URLs point to correct backend
@@ -210,7 +215,8 @@ After deployment:
 
 ## 📞 Need Help?
 
-- Railway docs: https://docs.railway.app
+- Render docs: https://docs.render.com
 - Vercel docs: https://vercel.com/docs
 - Netlify docs: https://docs.netlify.com
 - FastAPI deployment: https://fastapi.tiangolo.com/deployment/
+- MongoDB Atlas docs: https://docs.atlas.mongodb.com
