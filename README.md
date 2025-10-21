@@ -1,217 +1,240 @@
-# Stock Market Trading Journal API
+# Trading Journal
 
-A real-time, persistent stock market journal built with FastAPI, MongoDB, and WebSockets. This backend provides complete CRUD operations for managing trades and setups, along with live price feeds and automatic stop-loss alerts.
+**A fullstack web application for tracking and analyzing stock trades with real-time pricing**
 
-## Features
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://reactjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://typescriptlang.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688.svg)](https://fastapi.tiangolo.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248.svg)](https://mongodb.com)
 
-- **Trade Management**: Create, view, and close trades with full P&L calculation
-- **Setup Library**: Maintain a collection of trading setups/strategies
-- **Real-Time Price Feeds**: US stock quotes via Finnhub API with automatic USD to INR conversion
-- **Authentication**: JWT-based secure authentication and authorization
-- **Smart Caching**: 5-minute quote cache + 1-hour exchange rate cache to minimize API calls
-- **Ticker Search**: Automatic suggestions when ticker not found
-- **Async Architecture**: Built on FastAPI with async/await for high concurrency
-- **MongoDB**: Flexible document storage for journal entries
+---
 
-## Technology Stack
+## 🚀 Features
 
-- **FastAPI**: Modern async Python web framework
-- **MongoDB + Motor**: Async NoSQL database
-- **Pydantic**: Data validation and settings management
-- **Finnhub.io**: Stock market data provider (60 calls/min free tier)
-- **Exchange Rate API**: USD to INR currency conversion (1,500 calls/month free tier)
+- ✅ **User Registration & Authentication** with JWT
+- ✅ **Trade Management** - Create, view, close, and delete trades
+- ✅ **Real-Time Pricing** from Finnhub API (US stocks)
+- ✅ **USD to INR Conversion** for Indian traders
+- ✅ **Analytics Dashboard** - Win rate, P&L tracking
+- ✅ **Smart Caching** - 5-minute price cache, 1-hour exchange rate cache
+- ✅ **Modern UI** - React + TypeScript + Tailwind CSS
+- ✅ **Free Deployment** - Render (backend) + Vercel (frontend)
 
-## Project Structure
+---
 
-```
-/trading_journal_project
-|-- /app
-|   |-- main.py                      # FastAPI app entry point
-|   |-- /core
-|   |   |-- config.py                # Settings and env management
-|   |-- /db
-|   |   |-- database.py              # MongoDB client
-|   |-- /models
-|   |   |-- common.py                # Shared models
-|   |   |-- setup.py                 # Setup data models
-|   |   |-- trade.py                 # Trade data models
-|   |-- /routers
-|   |   |-- setups.py                # Setup CRUD endpoints
-|   |   |-- trades.py                # Trade CRUD endpoints
-||   |-- /services
-||       |-- finnhub_service.py       # Finnhub API client with rate limiting
-||       |-- exchange_rate_service.py # USD to INR conversion
-||       |-- mock_price_service.py    # Mock prices for development
-||       |-- websocket_manager.py     # WebSocket connection manager
-||       |-- alert_service.py         # Stop-loss monitoring (future)
-|-- .env                             # Environment variables
-|-- requirements.txt                 # Python dependencies
-```
+## 📚 Documentation
 
-## Setup Instructions
+For complete documentation, setup instructions, API reference, and deployment guide, see:
+
+**[📖 PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)**
+
+---
+
+## 🏃‍♂️ Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- MongoDB (local or cloud instance)
-- Finnhub API key (free tier: https://finnhub.io/dashboard)
-- Exchange Rate API key (free tier: https://www.exchangerate-api.com/)
+- Node.js 18+
+- MongoDB Atlas account (free)
+- Finnhub API key (free)
+- Exchange Rate API key (free)
 
-### Installation
-
-1. **Install dependencies:**
+### Backend Setup
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-2. **Configure environment variables:**
+# Create .env file
+MONGO_CONNECTION_STRING=your_mongodb_connection
+MONGO_DB_NAME=trading_journal
+FINNHUB_API_KEY=your_finnhub_key
+EXCHANGE_RATE_API_KEY=your_exchange_rate_key
+USE_MOCK_PRICES=false
 
-Create a `.env` file (see `.env.example` for template):
-
-```bash
-MONGO_CONNECTION_STRING="mongodb://user:pass@localhost:27017/"
-MONGO_DB_NAME="trading_journal"
-FINNHUB_API_KEY="your_finnhub_api_key"
-EXCHANGE_RATE_API_KEY="your_exchange_rate_api_key"
-USE_MOCK_PRICES=false  # Set to true for development without API calls
-```
-
-See **`FINNHUB_SETUP_GUIDE.md`** for detailed API key setup instructions.
-
-3. **Run the application:**
-
-```bash
+# Run backend
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
+Backend runs at: `http://localhost:8000`
 
-## API Endpoints
+### Frontend Setup
+
+```bash
+# Install dependencies
+cd frontend
+npm install
+
+# Run frontend
+npm run dev
+```
+
+Frontend runs at: `http://localhost:5173`
+
+### Access the App
+
+1. Visit `http://localhost:5173`
+2. Click **"Sign up"** to create an account
+3. Login and start tracking trades!
+
+---
+
+## 🌐 Live Demo
+
+Deploy your own instance in 3 steps:
+
+1. **Backend** → [Render](https://render.com) (Free)
+2. **Frontend** → [Vercel](https://vercel.com) (Free)
+3. **Database** → [MongoDB Atlas](https://mongodb.com/cloud/atlas) (Free 512MB)
+
+See [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md#7-deployment-guide) for detailed deployment instructions.
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- **FastAPI** - Modern async Python framework
+- **MongoDB** - NoSQL database with Motor async driver
+- **JWT** - Secure authentication
+- **Finnhub API** - Stock quotes (60 calls/min free)
+- **ExchangeRate API** - Currency conversion (1,500 calls/month free)
+
+### Frontend
+- **React 19** - UI library
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Fast build tool
+- **Tailwind CSS** - Utility-first styling
+- **Axios** - HTTP client
+
+---
+
+## 📁 Project Structure
+
+```
+trading_journal/
+├── app/                    # FastAPI backend
+│   ├── core/              # Auth & config
+│   ├── routers/           # API endpoints
+│   ├── services/          # External API clients
+│   └── models/            # Data models
+├── frontend/              # React frontend
+│   └── src/
+│       ├── pages/         # Page components
+│       ├── components/    # Reusable components
+│       └── services/      # API clients
+└── PROJECT_DOCUMENTATION.md  # Complete docs
+```
+
+---
+
+## 🎯 API Endpoints
+
+### Authentication
+- `POST /api/v1/auth/register` - Register new user
+- `POST /api/v1/auth/login` - Login
+- `GET /api/v1/auth/me` - Get current user
 
 ### Trades
+- `POST /api/v1/trades/` - Create trade
+- `GET /api/v1/trades/open` - Get open trades
+- `GET /api/v1/trades/closed` - Get closed trades
+- `PUT /api/v1/trades/{id}/close` - Close trade
+- `DELETE /api/v1/trades/{id}` - Delete trade
+- `GET /api/v1/trades/statistics` - Get statistics
+- `GET /api/v1/trades/quotes/{ticker}` - Get current price
 
-- `POST /api/v1/trades/` - Create a new trade
-- `GET /api/v1/trades/open` - Get all open trades
-- `GET /api/v1/trades/closed` - Get all closed trades
-- `PUT /api/v1/trades/{trade_id}/close` - Close a trade with exit price
+**Interactive API Docs:** `http://localhost:8000/docs`
 
-### Setups
+---
 
-- `POST /api/v1/setups/` - Create a new setup
-- `GET /api/v1/setups/` - Get all setups
+## 📖 Key Features Explained
 
-### WebSocket
+### Trade Management
+Track your stock trades from entry to exit with:
+- Entry price and stop loss
+- Position size
+- Market conditions and emotions
+- Automatic P&L calculation
 
-- `WS /ws/{user_id}` - Connect to real-time price feed
+### Real-Time Pricing
+- Fetches current prices from Finnhub
+- Converts USD prices to INR
+- 5-minute caching to stay within free tier limits
+- Supports US stocks and Indian ADRs
 
-## WebSocket Protocol
+### Analytics
+- Win rate calculation
+- Total P&L tracking
+- Trade history
+- Performance statistics
 
-### Client → Server
+---
 
-Subscribe to tickers:
-```json
-{
-  "type": "subscribe",
-  "tickers": ["AAPL", "TSLA", "MSFT"]
-}
-```
+## 🔑 Getting API Keys
 
-### Server → Client
+### Finnhub (Free)
+1. Visit [finnhub.io/dashboard](https://finnhub.io/dashboard)
+2. Sign up for free account
+3. Copy API key
+4. **Limit:** 60 calls/minute
 
-Price update:
-```json
-{
-  "type": "price_update",
-  "ticker": "AAPL",
-  "price": 150.25
-}
-```
+### Exchange Rate API (Free)
+1. Visit [exchangerate-api.com](https://www.exchangerate-api.com/)
+2. Sign up for free account
+3. Copy API key
+4. **Limit:** 1,500 calls/month
 
-Stop-loss alert:
-```json
-{
-  "type": "alert",
-  "ticker": "AAPL",
-  "trade_id": "507f1f77bcf86cd799439011",
-  "message": "Stop loss triggered for AAPL at $148.50"
-}
-```
+### MongoDB Atlas (Free)
+1. Visit [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+2. Create free cluster (512MB)
+3. Get connection string
+4. Whitelist IPs: `0.0.0.0/0`
 
-## API Documentation
+---
 
-Once running, visit:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+## 🐛 Troubleshooting
 
-## Example Usage
-
-### Create a Trade
-
+### Backend Issues
 ```bash
-curl -X POST "http://localhost:8000/api/v1/trades/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "ticker": "AAPL",
-    "direction": "bullish",
-    "entryPrice": 150.00,
-    "stopLoss": 148.00,
-    "size": 100,
-    "marketConditions": "Bullish trend, support at 148",
-    "emotions": "Confident"
-  }'
+# Module not found
+pip install -r requirements.txt
+
+# MongoDB connection error
+# Check .env file and MongoDB Atlas IP whitelist
 ```
 
-### Close a Trade
-
+### Frontend Issues
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/trades/{trade_id}/close" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "exitPrice": 155.00,
-    "lessonsLearned": "Trade went as planned, respected the setup"
-  }'
+# Module not found
+cd frontend && npm install
+
+# CORS errors
+# Verify backend is running on port 8000
 ```
 
-## Architecture Notes
+For detailed troubleshooting, see [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md#11-troubleshooting).
 
-### Price Service
+---
 
-The application uses Finnhub REST API for stock quotes:
+## 📝 License
 
-1. **Quote Caching**: 5-minute cache per ticker to minimize API calls
-2. **Rate Limiting**: 60 calls/minute with automatic enforcement
-3. **Symbol Search**: Suggests alternative tickers when not found
-4. **Indian ADR Detection**: Warns when viewing ADR prices vs NSE/BSE prices
+MIT License - Free for personal and commercial use
 
-### Currency Conversion
+---
 
-- Fetches USD to INR exchange rate from Exchange Rate API
-- 1-hour cache (exchange rates change infrequently)
-- All prices displayed in INR with USD reference
-- Fallback to last known rate if API fails
+## 🔗 Links
 
-### WebSocket Support
+- **Complete Documentation:** [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md)
+- **Repository:** [github.com/rachit-suresh/stock_journal](https://github.com/rachit-suresh/stock_journal)
+- **Finnhub API:** [finnhub.io/docs/api](https://finnhub.io/docs/api)
+- **FastAPI Docs:** [fastapi.tiangolo.com](https://fastapi.tiangolo.com)
+- **React Docs:** [react.dev](https://react.dev)
 
-WebSocket infrastructure is implemented but currently not used. Frontend polls every 30 seconds (sufficient with 5-minute cache). WebSocket can be enabled later for real-time streaming.
+---
 
-### P&L Calculation
+**Project Status:** ✅ Production Ready
 
-Profit/Loss is automatically calculated when a trade is closed:
-
-```
-result_pnl = (exitPrice - entryPrice) * size
-```
-
-## Future Enhancements
-
-- [ ] User authentication and authorization
-- [ ] Trade filtering and search
-- [ ] Performance analytics and statistics
-- [ ] Export functionality (CSV, PDF)
-- [ ] Multiple exchange support
-- [ ] Advanced charting integration
-
-## License
-
-MIT
+**Last Updated:** 2025-01-21
