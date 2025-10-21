@@ -32,8 +32,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
         "http://127.0.0.1:3000",
-        # Production - Add your Vercel frontend URL here
-        "https://stock-journal-three.vercel.app",  # Update with your actual Vercel URL
+        # Production
+        "https://stock-journal-three.vercel.app",
+        "*",  # Allow all origins (for testing only, remove in production)
     ],
     allow_credentials=True,
     allow_methods=["*"],
